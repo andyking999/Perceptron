@@ -1,23 +1,31 @@
 version: '3.8'
 
 services:
-  perceptron-python:
-    build:
-      context: .
-      dockerfile: Dockerfile.python
-    container_name: perceptron-python
-    image: perceptron:python
-
-  perceptron-node:
-    build:
-      context: .
-      dockerfile: Dockerfile.node
-    container_name: perceptron-node
-    image: perceptron:node
-
-  perceptron-both:
+  # Backend API service
+  backend:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: perceptron-both
-    image: perceptron:latest
+    container_name: perceptron-backend
+    ports:
+      - "3001:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+
+  # Frontend development service (for local development)
+  frontend-dev:
+    image: node:20-slim
+    container_name: perceptron-frontend-dev
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    ports:
+      - "5173:5173"
+    command: sh -c "npm install && npm run dev"
+    environment:
+      - VITE_API_URL=http://localhost:3001
+    depends_on:
+      - backend
+    profiles:
+      - dev

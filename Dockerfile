@@ -1,32 +1,39 @@
-# Multi-stage Dockerfile for Perceptron
-# This allows running both Python and Node.js implementations
+# Multi-stage Dockerfile for Perceptron Web Application
 
-FROM python:3.11-slim as python-base
+# Stage 1: Build frontend
+FROM node:20-slim as frontend-builder
 
-WORKDIR /app
-COPY perceptron.py .
+WORKDIR /app/frontend
 
-FROM node:20-slim as node-base
+# Copy frontend package files
+COPY frontend/package*.json ./
 
-WORKDIR /app
-COPY perceptron.js .
+# Install dependencies
+RUN npm install
 
-# Final stage - includes both Python and Node.js
-FROM python:3.11-slim
+# Copy frontend source
+COPY frontend/ ./
 
-# Install Node.js
-RUN apt-get update && \
-    apt-get install -y curl && \
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
-    apt-get install -y nodejs && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+# Build frontend for production
+RUN npm run build
+
+# Stage 2: Setup Python backend
+FROM python:3.11-slim as backend
 
 WORKDIR /app
 
-# Copy both implementations
-COPY perceptron.py .
-COPY perceptron.js .
+# Copy backend requirements and install
+COPY backend/requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Default command runs Python version
-CMD ["python", "perceptron.py"]
+# Copy backend source
+COPY backend/ ./
+
+# Copy built frontend from previous stage
+COPY --from=frontend-builder /app/frontend/dist ./static
+
+# Expose port
+EXPOSE 8000
+
+# Run FastAPI server
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
