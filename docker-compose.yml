@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  perceptron-python:
+    build:
+      context: .
+      dockerfile: Dockerfile.python
+    container_name: perceptron-python
+    image: perceptron:python
+
+  perceptron-node:
+    build:
+      context: .
+      dockerfile: Dockerfile.node
+    container_name: perceptron-node
+    image: perceptron:node
+
+  perceptron-both:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: perceptron-both
+    image: perceptron:latest
